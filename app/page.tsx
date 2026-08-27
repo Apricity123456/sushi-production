@@ -1719,11 +1719,20 @@ export default function Home() {
 
                   {productionList.map(
                     (item) => {
-                      const finalRolls =
-                        day.finalList[
-                          item.product
-                        ] ??
-                        item.rolls;
+                      // const finalRolls =
+                      //   day.finalList[
+                      //     item.product
+                      //   ] ??
+                      //   item.rolls;
+                      const hasManualValue =
+  Object.prototype.hasOwnProperty.call(
+    day.finalList,
+    item.product
+  );
+
+const finalRolls = hasManualValue
+  ? day.finalList[item.product]
+  : item.rolls;
 
                       return (
                         <div
