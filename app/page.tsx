@@ -892,6 +892,35 @@ export default function Home() {
     );
   }, [search]);
 
+  const filteredLeftoverMenus = useMemo(() => {
+    const q = leftoverSearch
+      .trim()
+      .toLowerCase();
+
+    if (!q) return MENUS;
+
+    return MENUS.filter((menu) => {
+      if (
+        menu.name
+          .toLowerCase()
+          .includes(q)
+      ) {
+        return true;
+      }
+
+      if (menu.id.includes(q)) {
+        return true;
+      }
+
+      return menu.items.some(
+        (item) =>
+          item.product
+            .toLowerCase()
+            .includes(q)
+      );
+    });
+  }, [leftoverSearch]);
+
   const filteredLeftoverProducts = useMemo(() => {
     const q = leftoverSearch
       .trim()
@@ -1327,6 +1356,32 @@ function changeDirectRoll(
 
     setYesterdayPlan(plan);
     setTab("leftover");
+  }
+
+  function addYesterdayLeftoverMenu(
+    menuId: string
+  ) {
+    const menu = getMenu(menuId);
+
+    if (!menu) return;
+
+    setYesterdayLeftover((current) => {
+      const next = {
+        ...current,
+      };
+
+      for (const item of menu.items) {
+        const rolls =
+          piecesToRolls(item.pieces);
+
+        next[item.product] =
+          (next[item.product] || 0) + rolls;
+      }
+
+      return next;
+    });
+
+    setLeftoverSearch("");
   }
 
   function addYesterdayLeftover(
@@ -1998,10 +2053,12 @@ const finalRolls = hasManualValue
             </h2>
 
             <p className="mt-1 text-slate-500">
-              Search and enter only what was left yesterday.
+              Search the same way as Today's List: add a Menu or an individual Roll.
             </p>
 
-            <div className="mt-7 max-w-2xl">
+            {/* SEARCH — SAME LOGIC AS TODAY'S LIST */}
+
+            <div className="mt-7">
               <input
                 value={leftoverSearch}
                 onChange={(event) =>
@@ -2009,101 +2066,200 @@ const finalRolls = hasManualValue
                     event.target.value
                   )
                 }
-                placeholder="Search roll..."
+                placeholder="Search Menu name, number or roll..."
                 className="w-full rounded-xl border px-4 py-3 outline-none focus:border-slate-900"
               />
 
-              {leftoverSearch && (
-                <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border">
-                  {filteredLeftoverProducts.map(
-                    (product) => (
-                      <button
-                        key={product}
-                        onClick={() =>
-                          addYesterdayLeftover(
-                            product
-                          )
-                        }
-                        className="flex w-full items-center justify-between border-b px-4 py-3 text-left hover:bg-slate-50"
-                      >
-                        <span>
-                          {product}
-                        </span>
+              {/* MENUS */}
 
-                        <span className="rounded-lg bg-slate-900 px-3 py-1 text-sm text-white">
+              <h3 className="mb-3 mt-7 font-bold text-slate-500">
+                MENUS
+              </h3>
+
+              <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                {filteredLeftoverMenus.map(
+                  (menu) => (
+                    <button
+                      key={menu.id}
+                      onClick={() =>
+                        addYesterdayLeftoverMenu(
+                          menu.id
+                        )
+                      }
+                      className="w-full rounded-xl border p-4 text-left transition hover:bg-slate-50"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="font-semibold">
+                            {menu.name}
+                          </div>
+
+                          <div className="mt-1 text-xs text-slate-400">
+                            #{menu.id}
+                          </div>
+                        </div>
+
+                        <span className="rounded-lg bg-slate-900 px-3 py-1 text-white">
                           +
                         </span>
-                      </button>
-                    )
-                  )}
-                </div>
-              )}
+                      </div>
+
+                      <div className="mt-3 text-sm leading-6 text-slate-500">
+                        {menu.items
+                          .map(
+                            (item) =>
+                              `${item.product} × ${item.pieces} pcs`
+                          )
+                          .join(" · ")}
+                      </div>
+                    </button>
+                  )
+                )}
+
+                {filteredLeftoverMenus.length ===
+                  0 && (
+                  <div className="rounded-xl bg-slate-50 p-6 text-center text-slate-500">
+                    No Menu found.
+                  </div>
+                )}
+              </div>
+
+              {/* INDIVIDUAL ROLLS */}
+
+              <h3 className="mb-3 mt-7 font-bold text-slate-500">
+                INDIVIDUAL ROLLS
+              </h3>
+
+              <div className="max-h-80 space-y-2 overflow-y-auto">
+                {filteredLeftoverProducts.map(
+                  (product) => (
+                    <button
+                      key={product}
+                      onClick={() =>
+                        addYesterdayLeftover(
+                          product
+                        )
+                      }
+                      className="flex w-full items-center justify-between rounded-xl border p-4 text-left transition hover:bg-slate-50"
+                    >
+                      <span>{product}</span>
+
+                      <span className="rounded-lg bg-slate-900 px-3 py-1 text-white">
+                        +
+                      </span>
+                    </button>
+                  )
+                )}
+              </div>
             </div>
 
-            <div className="mt-6 max-w-3xl space-y-3">
-              {Object.keys(
-                yesterdayLeftover
-              ).length ===
-                0 && (
-                <div className="rounded-xl bg-slate-50 p-8 text-center text-slate-500">
-                  Search a roll above and add yesterday's leftover.
-                </div>
-              )}
+            {/* ADDED LEFTOVERS */}
 
-              {Object.entries(
-                yesterdayLeftover
-              ).map(
-                ([
-                  product,
-                  leftover,
-                ]) => (
-                  <div
-                    key={product}
-                    className="flex flex-col gap-4 rounded-2xl bg-slate-50 p-5 md:flex-row md:items-center md:justify-between"
-                  >
-                    <div>
-                      <div className="font-semibold">
-                        {product}
-                      </div>
+            <div className="mt-8 border-t pt-6">
+              <h3 className="font-bold">
+                Added Leftovers
+              </h3>
 
-                      <div className="mt-1 text-sm text-slate-500">
-                        Yesterday leftover
-                      </div>
-                    </div>
+              <p className="mt-1 text-sm text-slate-500">
+                Enter the actual unsold quantity for each roll.
+              </p>
 
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.125"
-                        value={leftover}
-                        onChange={(event) =>
-                          setLeftover(
-                            product,
-                            event.target.value
-                          )
-                        }
-                        className="w-28 rounded-xl border px-4 py-3 text-center font-bold"
-                      />
-
-                      <span className="text-slate-500">
-                        rolls
-                      </span>
-
-                      <button
-                        onClick={() =>
-                          removeLeftover(
-                            product
-                          )
-                        }
-                        className="text-sm text-red-500"
-                      >
-                        Remove
-                      </button>
-                    </div>
+              <div className="mt-4 max-w-3xl space-y-3">
+                {Object.keys(
+                  yesterdayLeftover
+                ).length ===
+                  0 && (
+                  <div className="rounded-xl bg-slate-50 p-8 text-center text-slate-500">
+                    Search a Menu or Roll above and add yesterday's leftover.
                   </div>
-                )
-              )}
+                )}
+
+                {Object.entries(
+                  yesterdayLeftover
+                ).map(
+                  ([
+                    product,
+                    leftover,
+                  ]) => (
+                    <div
+                      key={product}
+                      className="flex flex-col gap-4 rounded-2xl bg-slate-50 p-5 md:flex-row md:items-center md:justify-between"
+                    >
+                      <div>
+                        <div className="font-semibold">
+                          {product}
+                        </div>
+
+                        <div className="mt-1 text-sm text-slate-500">
+                          Yesterday leftover
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() =>
+                            setLeftover(
+                              product,
+                              String(
+                                Math.max(
+                                  0,
+                                  leftover - 0.125
+                                )
+                              )
+                            )
+                          }
+                          className="h-10 w-10 rounded-lg border bg-white"
+                        >
+                          −
+                        </button>
+
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.125"
+                          value={leftover}
+                          onChange={(event) =>
+                            setLeftover(
+                              product,
+                              event.target.value
+                            )
+                          }
+                          className="w-28 rounded-xl border px-3 py-2 text-center font-bold"
+                        />
+
+                        <button
+                          onClick={() =>
+                            setLeftover(
+                              product,
+                              String(
+                                leftover + 0.125
+                              )
+                            )
+                          }
+                          className="h-10 w-10 rounded-lg bg-slate-900 text-white"
+                        >
+                          +
+                        </button>
+
+                        <span className="text-slate-500">
+                          rolls
+                        </span>
+
+                        <button
+                          onClick={() =>
+                            removeLeftover(
+                              product
+                            )
+                          }
+                          className="ml-2 text-sm text-red-500"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
             </div>
 
             <div className="mt-8 rounded-2xl bg-slate-50 p-5">
