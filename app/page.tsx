@@ -965,154 +965,262 @@ export default function Home() {
      MENU ACTIONS
   ======================================================= */
 
+  // function addMenu(menuId: string) {
+  //   setDay((current) => {
+  //     const existing =
+  //       current.menus.find(
+  //         (item) =>
+  //           item.menuId === menuId
+  //       );
+
+  //     if (existing) {
+  //       return {
+  //         ...current,
+  //         menus:
+  //           current.menus.map(
+  //             (item) =>
+  //               item.menuId ===
+  //               menuId
+  //                 ? {
+  //                     ...item,
+  //                     quantity:
+  //                       item.quantity +
+  //                       1,
+  //                   }
+  //                 : item
+  //           ),
+  //       };
+  //     }
+
+  //     return {
+  //       ...current,
+  //       menus: [
+  //         ...current.menus,
+  //         {
+  //           menuId,
+  //           quantity: 1,
+  //         },
+  //       ],
+  //     };
+  //   });
+  // }
+
   function addMenu(menuId: string) {
-    setDay((current) => {
-      const existing =
-        current.menus.find(
-          (item) =>
-            item.menuId === menuId
-        );
-
-      if (existing) {
-        return {
-          ...current,
-          menus:
-            current.menus.map(
-              (item) =>
-                item.menuId ===
-                menuId
-                  ? {
-                      ...item,
-                      quantity:
-                        item.quantity +
-                        1,
-                    }
-                  : item
-            ),
-        };
-      }
-
-      return {
-        ...current,
-        menus: [
-          ...current.menus,
-          {
-            menuId,
-            quantity: 1,
-          },
-        ],
-      };
-    });
-  }
-
-  function changeMenu(
-    menuId: string,
-    amount: number
-  ) {
-    setDay((current) => ({
-      ...current,
-      menus:
-        current.menus
-          .map((item) =>
-            item.menuId === menuId
-              ? {
-                  ...item,
-                  quantity:
-                    Math.max(
-                      0,
-                      item.quantity +
-                        amount
-                    ),
-                }
-              : item
-          )
-          .filter(
-            (item) =>
-              item.quantity > 0
-          ),
-    }));
-  }
-
-  function setMenuQuantity(
-    menuId: string,
-    value: string
-  ) {
-    const quantity = Math.max(
-      0,
-      Number(value) || 0
+  setDay((current) => {
+    const existing = current.menus.find(
+      (item) => item.menuId === menuId
     );
 
-    setDay((current) => ({
-      ...current,
-      menus:
-        current.menus
-          .map((item) =>
-            item.menuId === menuId
-              ? {
-                  ...item,
-                  quantity,
-                }
-              : item
-          )
-          .filter(
-            (item) =>
-              item.quantity > 0
-          ),
-    }));
-  }
+    if (existing) {
+      return {
+        ...current,
+        menus: current.menus.map((item) =>
+          item.menuId === menuId
+            ? {
+                ...item,
+                quantity: item.quantity + 1,
+              }
+            : item
+        ),
+        finalList: {},
+      };
+    }
 
+    return {
+      ...current,
+      menus: [
+        ...current.menus,
+        {
+          menuId,
+          quantity: 1,
+        },
+      ],
+      finalList: {},
+    };
+  });
+}
+  // function changeMenu(
+  //   menuId: string,
+  //   amount: number
+  // ) {
+  //   setDay((current) => ({
+  //     ...current,
+  //     menus:
+  //       current.menus
+  //         .map((item) =>
+  //           item.menuId === menuId
+  //             ? {
+  //                 ...item,
+  //                 quantity:
+  //                   Math.max(
+  //                     0,
+  //                     item.quantity +
+  //                       amount
+  //                   ),
+  //               }
+  //             : item
+  //         )
+  //         .filter(
+  //           (item) =>
+  //             item.quantity > 0
+  //         ),
+  //   }));
+  // }
+function changeMenu(
+  menuId: string,
+  amount: number
+) {
+  setDay((current) => ({
+    ...current,
+    menus: current.menus
+      .map((item) =>
+        item.menuId === menuId
+          ? {
+              ...item,
+              quantity: Math.max(
+                0,
+                item.quantity + amount
+              ),
+            }
+          : item
+      )
+      .filter(
+        (item) => item.quantity > 0
+      ),
+    finalList: {},
+  }));
+}
+  // function setMenuQuantity(
+  //   menuId: string,
+  //   value: string
+  // ) {
+  //   const quantity = Math.max(
+  //     0,
+  //     Number(value) || 0
+  //   );
+
+  //   setDay((current) => ({
+  //     ...current,
+  //     menus:
+  //       current.menus
+  //         .map((item) =>
+  //           item.menuId === menuId
+  //             ? {
+  //                 ...item,
+  //                 quantity,
+  //               }
+  //             : item
+  //         )
+  //         .filter(
+  //           (item) =>
+  //             item.quantity > 0
+  //         ),
+  //   }));
+  // }
+function setMenuQuantity(
+  menuId: string,
+  value: string
+) {
+  const quantity = Math.max(
+    0,
+    Number(value) || 0
+  );
+
+  setDay((current) => ({
+    ...current,
+    menus: current.menus
+      .map((item) =>
+        item.menuId === menuId
+          ? {
+              ...item,
+              quantity,
+            }
+          : item
+      )
+      .filter(
+        (item) => item.quantity > 0
+      ),
+    finalList: {},
+  }));
+}
   /* =======================================================
      INDIVIDUAL ROLLS
   ======================================================= */
 
-  function addDirectRoll(
-    product: string
-  ) {
-    setDay((current) => ({
+ function addDirectRoll(
+  product: string
+) {
+  setDay((current) => ({
+    ...current,
+    directRolls: {
+      ...current.directRolls,
+      [product]:
+        (current.directRolls[product] || 0) + 1,
+    },
+    finalList: {},
+  }));
+}
+
+  // function changeDirectRoll(
+  //   product: string,
+  //   amount: number
+  // ) {
+  //   setDay((current) => {
+  //     const next = Math.max(
+  //       0,
+  //       (current.directRolls[
+  //         product
+  //       ] || 0) + amount
+  //     );
+
+  //     const directRolls = {
+  //       ...current.directRolls,
+  //     };
+
+  //     if (next === 0) {
+  //       delete directRolls[
+  //         product
+  //       ];
+  //     } else {
+  //       directRolls[
+  //         product
+  //       ] = next;
+  //     }
+
+  //     return {
+  //       ...current,
+  //       directRolls,
+  //     };
+  //   });
+  // }
+function changeDirectRoll(
+  product: string,
+  amount: number
+) {
+  setDay((current) => {
+    const next = Math.max(
+      0,
+      (current.directRolls[product] || 0) +
+        amount
+    );
+
+    const directRolls = {
+      ...current.directRolls,
+    };
+
+    if (next === 0) {
+      delete directRolls[product];
+    } else {
+      directRolls[product] = next;
+    }
+
+    return {
       ...current,
-      directRolls: {
-        ...current.directRolls,
-        [product]:
-          (current.directRolls[
-            product
-          ] || 0) + 1,
-      },
-    }));
-  }
-
-  function changeDirectRoll(
-    product: string,
-    amount: number
-  ) {
-    setDay((current) => {
-      const next = Math.max(
-        0,
-        (current.directRolls[
-          product
-        ] || 0) + amount
-      );
-
-      const directRolls = {
-        ...current.directRolls,
-      };
-
-      if (next === 0) {
-        delete directRolls[
-          product
-        ];
-      } else {
-        directRolls[
-          product
-        ] = next;
-      }
-
-      return {
-        ...current,
-        directRolls,
-      };
-    });
-  }
-
+      directRolls,
+      finalList: {},
+    };
+  });
+}
   /* =======================================================
      FINAL LIST
   ======================================================= */
