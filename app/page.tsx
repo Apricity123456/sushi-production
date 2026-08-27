@@ -724,10 +724,13 @@ function getMenu(menuId: string) {
   return MENUS.find((menu) => menu.id === menuId);
 }
 
+// function piecesToRolls(pieces: number) {
+//   return Math.ceil(
+//     pieces / PIECES_PER_ROLL
+//   );
+// }
 function piecesToRolls(pieces: number) {
-  return Math.ceil(
-    pieces / PIECES_PER_ROLL
-  );
+  return pieces / PIECES_PER_ROLL;
 }
 
 /* =========================================================
