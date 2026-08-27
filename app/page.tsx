@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const PIECES_PER_ROLL = 8;
-const STORAGE_KEY = "sushi-production-v6";
+/* =========================================================
+   TYPES
+========================================================= */
 
 type MenuItem = {
   product: string;
@@ -22,12 +23,26 @@ type SelectedMenu = {
 };
 
 type DayData = {
-  date: string;
   menus: SelectedMenu[];
   directRolls: Record<string, number>;
-  leftovers: Record<string, number>;
-  manualProduction: Record<string, number>;
+  finalList: Record<string, number>;
 };
+
+type ProductionLine = {
+  product: string;
+  pieces: number;
+  rolls: number;
+};
+
+const STORAGE_KEY = "sushi-production-v5";
+
+const PIECES_PER_ROLL = 8;
+
+/* =========================================================
+   ALL MENUS
+   IMPORTANT:
+   The numbers below are PIECES, not rolls.
+========================================================= */
 
 const MENUS: Menu[] = [
   {
@@ -40,6 +55,7 @@ const MENUS: Menu[] = [
       { product: "cali saumon sweet crispy", pieces: 4 },
     ],
   },
+
   {
     id: "110011",
     name: "POUR LES ENFANTS",
@@ -49,6 +65,7 @@ const MENUS: Menu[] = [
       { product: "icerolls saumon cheese", pieces: 2 },
     ],
   },
+
   {
     id: "110012",
     name: "L’EXPLOSION",
@@ -65,6 +82,7 @@ const MENUS: Menu[] = [
       },
     ],
   },
+
   {
     id: "110013",
     name: "L’INCONTOURNABLE",
@@ -73,6 +91,7 @@ const MENUS: Menu[] = [
       { product: "cali saumon avocat", pieces: 8 },
     ],
   },
+
   {
     id: "110014",
     name: "L’IRRESISTIBLE",
@@ -88,6 +107,7 @@ const MENUS: Menu[] = [
       { product: "sashimis saumon", pieces: 5 },
     ],
   },
+
   {
     id: "110015",
     name: "LE DIVIN",
@@ -97,6 +117,7 @@ const MENUS: Menu[] = [
       { product: "makis saumon", pieces: 8 },
     ],
   },
+
   {
     id: "110016",
     name: "LE PACIFIC",
@@ -104,12 +125,10 @@ const MENUS: Menu[] = [
       { product: "sushis saumon", pieces: 4 },
       { product: "sushis thon", pieces: 4 },
       { product: "cali saumon avocat", pieces: 4 },
-      {
-        product: "cali surimi avocat concombre",
-        pieces: 4,
-      },
+      { product: "cali surimi avocat concombre", pieces: 4 },
     ],
   },
+
   {
     id: "110017",
     name: "LA ZEN",
@@ -120,6 +139,7 @@ const MENUS: Menu[] = [
       { product: "sushis crevette", pieces: 1 },
     ],
   },
+
   {
     id: "110018",
     name: "SUSHIMAN",
@@ -131,6 +151,7 @@ const MENUS: Menu[] = [
       { product: "makis thon", pieces: 8 },
     ],
   },
+
   {
     id: "110019",
     name: "TENTATION SAUMON CHEESE",
@@ -140,6 +161,7 @@ const MENUS: Menu[] = [
       { product: "icerolls saumon cheese", pieces: 8 },
     ],
   },
+
   {
     id: "110020",
     name: "THE BEST",
@@ -149,6 +171,7 @@ const MENUS: Menu[] = [
       { product: "makis saumon", pieces: 8 },
     ],
   },
+
   {
     id: "110021",
     name: "BOX DÉCOUVERTE",
@@ -161,6 +184,7 @@ const MENUS: Menu[] = [
       { product: "cali thon cuit avocat", pieces: 4 },
     ],
   },
+
   {
     id: "110022",
     name: "BOX ÉTUDIANT",
@@ -173,6 +197,7 @@ const MENUS: Menu[] = [
       { product: "cali saumon avocat", pieces: 4 },
     ],
   },
+
   {
     id: "110023",
     name: "CALIFORNIA MIX",
@@ -182,6 +207,7 @@ const MENUS: Menu[] = [
       { product: "cali thon cuit avocat", pieces: 4 },
     ],
   },
+
   {
     id: "110027",
     name: "PLATEAU SAMOURAI",
@@ -202,6 +228,7 @@ const MENUS: Menu[] = [
       },
     ],
   },
+
   {
     id: "110028",
     name: "VEGGIE BOX",
@@ -210,6 +237,7 @@ const MENUS: Menu[] = [
       { product: "cali avocat cheese", pieces: 8 },
     ],
   },
+
   {
     id: "110029",
     name: "CLASSIC MAKI",
@@ -219,6 +247,7 @@ const MENUS: Menu[] = [
       { product: "makis avocat", pieces: 8 },
     ],
   },
+
   {
     id: "110032",
     name: "BOX SIGNATURE",
@@ -237,6 +266,7 @@ const MENUS: Menu[] = [
       { product: "sushis saumon", pieces: 2 },
     ],
   },
+
   {
     id: "110033",
     name: "CLASSIC CALIFORNIA",
@@ -249,6 +279,7 @@ const MENUS: Menu[] = [
       },
     ],
   },
+
   {
     id: "110038",
     name: "CHEESE LOVER",
@@ -258,6 +289,7 @@ const MENUS: Menu[] = [
       { product: "cali saumon cheese", pieces: 4 },
     ],
   },
+
   {
     id: "110039",
     name: "ASAKUSA",
@@ -280,6 +312,7 @@ const MENUS: Menu[] = [
       },
     ],
   },
+
   {
     id: "110042",
     name: "L’AMATEUR",
@@ -297,11 +330,13 @@ const MENUS: Menu[] = [
       },
     ],
   },
+
   {
     id: "110043",
     name: "BOX DU MOIS",
     items: [],
   },
+
   {
     id: "110047",
     name: "L’INCONTOURNABLE VERDE",
@@ -310,6 +345,7 @@ const MENUS: Menu[] = [
       { product: "springrolls saumon avocat", pieces: 8 },
     ],
   },
+
   {
     id: "110048",
     name: "MIDORI BOX",
@@ -322,6 +358,7 @@ const MENUS: Menu[] = [
       { product: "icerolls saumon cheese", pieces: 8 },
     ],
   },
+
   {
     id: "110049",
     name: "SPLENDIDE",
@@ -334,6 +371,7 @@ const MENUS: Menu[] = [
       { product: "springrolls saumon avocat", pieces: 8 },
     ],
   },
+
   {
     id: "110050",
     name: "LA DÉBUTANTE",
@@ -349,6 +387,7 @@ const MENUS: Menu[] = [
       { product: "cali thon cuit avocat", pieces: 4 },
     ],
   },
+
   {
     id: "110051",
     name: "CREATIVE",
@@ -357,39 +396,36 @@ const MENUS: Menu[] = [
       { product: "cali veggie", pieces: 4 },
       { product: "croquants veggie", pieces: 4 },
       { product: "icerolls saumon cheese", pieces: 4 },
-      { product: "dragonrolls tempura", pieces: 4 },
+      { product: "dragon rolls tempura", pieces: 4 },
       { product: "sushis saumon", pieces: 2 },
     ],
   },
+
   {
     id: "110057",
     name: "BOX SPICY",
     items: [
       { product: "cali saumon avocat", pieces: 4 },
-      { product: "mayo spicy", pieces: 4 / 4 },
       { product: "sushis saumon", pieces: 3 },
-      { product: "mayo spicy", pieces: 3 / 4 },
       { product: "makis concombre", pieces: 4 },
-      { product: "mayo spicy", pieces: 4 / 4 },
       {
         product: "croquants surimi avocat concombre",
         pieces: 4,
       },
     ],
   },
+
   {
     id: "110058",
     name: "BOX SWEET WASABI",
     items: [
       { product: "sushis saumon", pieces: 3 },
-      { product: "sauce wasabi", pieces: 3 / 4 },
       { product: "makis avocat", pieces: 4 },
-      { product: "sauce wasabi", pieces: 4 / 4 },
       { product: "springrolls saumon avocat", pieces: 4 },
-      { product: "sauce wasabi", pieces: 4 / 4 },
       { product: "croquants tempura", pieces: 4 },
     ],
   },
+
   {
     id: "110074",
     name: "MAKIDO",
@@ -399,13 +435,11 @@ const MENUS: Menu[] = [
       { product: "makis cheese", pieces: 8 },
       { product: "makis concombre", pieces: 8 },
       { product: "cali saumon avocat", pieces: 8 },
-      {
-        product: "croquants thon cuit avocat",
-        pieces: 8,
-      },
+      { product: "croquants thon cuit avocat", pieces: 8 },
       { product: "springrolls saumon avocat", pieces: 8 },
     ],
   },
+
   {
     id: "110075",
     name: "LE SENSEI",
@@ -416,7 +450,7 @@ const MENUS: Menu[] = [
         pieces: 4,
       },
       { product: "sushis saumon mi-cuit", pieces: 4 },
-      { product: "dragon roll tempura", pieces: 8 },
+      { product: "dragon rolls tempura", pieces: 8 },
       {
         product: "cali avocat cheese furikake",
         pieces: 8,
@@ -429,6 +463,7 @@ const MENUS: Menu[] = [
       { product: "makis avocat", pieces: 4 },
     ],
   },
+
   {
     id: "110076",
     name: "L’INCONTOURNABLE CROQUANT",
@@ -437,6 +472,7 @@ const MENUS: Menu[] = [
       { product: "croquants saumon avocat", pieces: 8 },
     ],
   },
+
   {
     id: "110077",
     name: "L’ESSENTIELLE",
@@ -446,6 +482,7 @@ const MENUS: Menu[] = [
       { product: "cali saumon avocat", pieces: 8 },
     ],
   },
+
   {
     id: "110078",
     name: "MAKI LOVER",
@@ -460,6 +497,7 @@ const MENUS: Menu[] = [
       },
     ],
   },
+
   {
     id: "110079",
     name: "SHIRO BOX SANS ALGUE",
@@ -472,6 +510,7 @@ const MENUS: Menu[] = [
       { product: "snowrolls saumon cheese", pieces: 8 },
     ],
   },
+
   {
     id: "110080",
     name: "TUNA LOVER",
@@ -485,12 +524,12 @@ const MENUS: Menu[] = [
         pieces: 8,
       },
       {
-        product:
-          "springrolls thon cuit mayonnaise avocat",
+        product: "springrolls thon cuit mayonnaise avocat",
         pieces: 8,
       },
     ],
   },
+
   {
     id: "110081",
     name: "KAIZEN SAUMON",
@@ -500,6 +539,7 @@ const MENUS: Menu[] = [
       { product: "cali avocat cheese", pieces: 4 },
     ],
   },
+
   {
     id: "110082",
     name: "KAIZEN THON",
@@ -510,12 +550,12 @@ const MENUS: Menu[] = [
         pieces: 4,
       },
       {
-        product:
-          "springrolls thon cuit mayonnaise avocat",
+        product: "springrolls thon cuit mayonnaise avocat",
         pieces: 8,
       },
     ],
   },
+
   {
     id: "110083",
     name: "CHEESY CHEDDAR",
@@ -532,6 +572,7 @@ const MENUS: Menu[] = [
       },
     ],
   },
+
   {
     id: "110084",
     name: "CHEESY PROVOLA",
@@ -540,15 +581,18 @@ const MENUS: Menu[] = [
         product: "cali provola fumée thon cuit mayonnaise avocat",
         pieces: 4,
       },
-      { product: "cali provola fumée veggie", pieces: 4 },
       {
-        product:
-          "springrolls thon cuit mayonnaise avocat",
+        product: "cali provola fumée veggie",
+        pieces: 4,
+      },
+      {
+        product: "springrolls thon cuit mayonnaise avocat",
         pieces: 4,
       },
       { product: "cali saumon avocat", pieces: 4 },
     ],
   },
+
   {
     id: "110085",
     name: "AMATEUR VERDE",
@@ -556,8 +600,7 @@ const MENUS: Menu[] = [
       { product: "sushis saumon", pieces: 4 },
       { product: "sushis crevette", pieces: 2 },
       {
-        product:
-          "springrolls crunchy thon cuit mayonnaise avocat",
+        product: "springrolls crunchy thon cuit mayonnaise avocat",
         pieces: 8,
       },
       { product: "springrolls saumon avocat", pieces: 8 },
@@ -566,6 +609,7 @@ const MENUS: Menu[] = [
       { product: "icerolls saumon cheese", pieces: 8 },
     ],
   },
+
   {
     id: "110087",
     name: "INCONTOURNABLE CHEESE",
@@ -574,6 +618,7 @@ const MENUS: Menu[] = [
       { product: "californias saumon cheese", pieces: 8 },
     ],
   },
+
   {
     id: "110088",
     name: "NORUU BOX",
@@ -583,6 +628,7 @@ const MENUS: Menu[] = [
       { product: "cali saumon cheese", pieces: 8 },
     ],
   },
+
   {
     id: "110089",
     name: "SALMON LOVER",
@@ -592,6 +638,7 @@ const MENUS: Menu[] = [
       { product: "croquants saumon avocat", pieces: 8 },
     ],
   },
+
   {
     id: "110090",
     name: "MIX & MATCH",
@@ -602,6 +649,7 @@ const MENUS: Menu[] = [
       { product: "cali saumon cheese", pieces: 4 },
     ],
   },
+
   {
     id: "110091",
     name: "CROUSTY CHICKEN BOX",
@@ -618,6 +666,7 @@ const MENUS: Menu[] = [
       },
     ],
   },
+
   {
     id: "110092",
     name: "PICK’N’DIP",
@@ -629,6 +678,7 @@ const MENUS: Menu[] = [
       { product: "cali thon cuit avocat", pieces: 8 },
     ],
   },
+
   {
     id: "114001",
     name: "BENTO POISSON",
@@ -645,319 +695,620 @@ const MENUS: Menu[] = [
   },
 ];
 
-function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}-${String(d.getDate()).padStart(2, "0")}`;
-}
+/* =========================================================
+   PRODUCTS
+   Automatically generated from all menus.
+========================================================= */
+
+const PRODUCTS = Array.from(
+  new Set(
+    MENUS.flatMap((menu) =>
+      menu.items.map((item) => item.product)
+    )
+  )
+).sort((a, b) => a.localeCompare(b));
+
+/* =========================================================
+   HELPERS
+========================================================= */
 
 function emptyDay(): DayData {
   return {
-    date: todayKey(),
     menus: [],
     directRolls: {},
-    leftovers: {},
-    manualProduction: {},
+    finalList: {},
   };
 }
 
-function formatNumber(value: number) {
-  if (Number.isInteger(value)) return String(value);
-  return String(Number(value.toFixed(3)));
+function getMenu(menuId: string) {
+  return MENUS.find((menu) => menu.id === menuId);
 }
 
+// function piecesToRolls(pieces: number) {
+//   return Math.ceil(
+//     pieces / PIECES_PER_ROLL
+//   );
+// }
 function piecesToRolls(pieces: number) {
   return pieces / PIECES_PER_ROLL;
 }
 
-function normaliseProductName(name: string) {
-  return name.trim().replace(/\s+/g, " ");
-}
+/* =========================================================
+   MAIN APP
+========================================================= */
 
-export default function HomePage() {
-  const [day, setDay] = useState<DayData>(emptyDay());
-  const [menuSearch, setMenuSearch] = useState("");
-  const [rollSearch, setRollSearch] = useState("");
-  const [leftoverSearch, setLeftoverSearch] = useState("");
-  const [loaded, setLoaded] = useState(false);
-  const [recommendationGenerated, setRecommendationGenerated] =
-    useState(false);
+export default function Home() {
+  const [day, setDay] = useState<DayData>(
+    emptyDay()
+  );
+
+  const [tab, setTab] = useState<
+    "plan" | "leftover" | "recommendation"
+  >("plan");
+
+  const [search, setSearch] = useState("");
+
+  const [yesterdayPlan, setYesterdayPlan] =
+    useState<Record<string, number>>({});
+
+  const [yesterdayLeftover, setYesterdayLeftover] =
+    useState<Record<string, number>>({});
+
+  const [recommendation, setRecommendation] =
+    useState<Record<string, number>>({});
+
+  /* -------------------------------------------------------
+     LOAD
+  ------------------------------------------------------- */
 
   useEffect(() => {
-    const key = `${STORAGE_KEY}-${todayKey()}`;
-    const saved = localStorage.getItem(key);
+    const saved =
+      localStorage.getItem(STORAGE_KEY);
 
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setDay({
-          ...emptyDay(),
-          ...parsed,
-          date: todayKey(),
-        });
-      } catch {
-        setDay(emptyDay());
+    if (!saved) return;
+
+    try {
+      const parsed = JSON.parse(saved);
+
+      if (parsed?.day) {
+        setDay(parsed.day);
       }
-    }
 
-    setLoaded(true);
+      if (parsed?.yesterdayPlan) {
+        setYesterdayPlan(
+          parsed.yesterdayPlan
+        );
+      }
+
+      if (parsed?.yesterdayLeftover) {
+        setYesterdayLeftover(
+          parsed.yesterdayLeftover
+        );
+      }
+
+      if (parsed?.recommendation) {
+        setRecommendation(
+          parsed.recommendation
+        );
+      }
+    } catch {
+      localStorage.removeItem(
+        STORAGE_KEY
+      );
+    }
   }, []);
 
+  /* -------------------------------------------------------
+     SAVE
+  ------------------------------------------------------- */
+
   useEffect(() => {
-    if (!loaded) return;
-
-    const key = `${STORAGE_KEY}-${todayKey()}`;
-    localStorage.setItem(key, JSON.stringify(day));
-  }, [day, loaded]);
-
-  const selectedMenus = useMemo(() => {
-    return day.menus
-      .map((selected) => {
-        const menu = MENUS.find((m) => m.id === selected.menuId);
-        return menu
-          ? {
-              ...selected,
-              menu,
-            }
-          : null;
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        day,
+        yesterdayPlan,
+        yesterdayLeftover,
+        recommendation,
       })
-      .filter(Boolean) as Array<
-      SelectedMenu & { menu: Menu }
-    >;
-  }, [day.menus]);
-
-  const menuResults = useMemo(() => {
-    const q = menuSearch.trim().toLowerCase();
-
-    if (!q) return MENUS.slice(0, 15);
-
-    return MENUS.filter(
-      (menu) =>
-        menu.name.toLowerCase().includes(q) ||
-        menu.id.includes(q)
-    ).slice(0, 20);
-  }, [menuSearch]);
-
-  const allProducts = useMemo(() => {
-    const set = new Set<string>();
-
-    MENUS.forEach((menu) => {
-      menu.items.forEach((item) => {
-        set.add(normaliseProductName(item.product));
-      });
-    });
-
-    Object.keys(day.directRolls).forEach((p) => set.add(p));
-    Object.keys(day.leftovers).forEach((p) => set.add(p));
-
-    return Array.from(set).sort((a, b) =>
-      a.localeCompare(b)
     );
-  }, [day.directRolls, day.leftovers]);
-
-  const rollResults = useMemo(() => {
-    const q = rollSearch.trim().toLowerCase();
-
-    if (!q) return [];
-
-    return allProducts
-      .filter((product) =>
-        product.toLowerCase().includes(q)
-      )
-      .slice(0, 15);
-  }, [rollSearch, allProducts]);
-
-  const leftoverResults = useMemo(() => {
-    const q = leftoverSearch.trim().toLowerCase();
-
-    if (!q) return [];
-
-    return allProducts
-      .filter((product) =>
-        product.toLowerCase().includes(q)
-      )
-      .slice(0, 15);
-  }, [leftoverSearch, allProducts]);
-
-  /*
-   * TODAY'S PLANNED PRODUCTION
-   *
-   * Menu quantities are multiplied by pieces.
-   * All identical products are merged.
-   * pieces / 8 = exact rolls.
-   */
-  const plannedProduction = useMemo(() => {
-    const map: Record<
-      string,
-      { product: string; pieces: number }
-    > = {};
-
-    for (const selected of selectedMenus) {
-      for (const item of selected.menu.items) {
-        const product = normaliseProductName(item.product);
-
-        if (!map[product]) {
-          map[product] = {
-            product,
-            pieces: 0,
-          };
-        }
-
-        map[product].pieces +=
-          item.pieces * selected.quantity;
-      }
-    }
-
-    for (const [product, rolls] of Object.entries(
-      day.directRolls
-    )) {
-      if (!map[product]) {
-        map[product] = {
-          product,
-          pieces: 0,
-        };
-      }
-
-      map[product].pieces +=
-        rolls * PIECES_PER_ROLL;
-    }
-
-    return Object.values(map)
-      .map((item) => ({
-        ...item,
-        rolls: piecesToRolls(item.pieces),
-      }))
-      .sort((a, b) =>
-        a.product.localeCompare(b.product)
-      );
-  }, [selectedMenus, day.directRolls]);
-
-  const plannedMap = useMemo(() => {
-    const map: Record<string, number> = {};
-
-    plannedProduction.forEach((item) => {
-      map[item.product] = item.rolls;
-    });
-
-    return map;
-  }, [plannedProduction]);
-
-  /*
-   * FINAL RECOMMENDATION
-   *
-   * planned - yesterday leftover
-   *
-   * If user manually changes final production,
-   * manualProduction overrides recommendation.
-   */
-  const recommendation = useMemo(() => {
-    return plannedProduction.map((item) => {
-      const leftover = day.leftovers[item.product] || 0;
-
-      const automatic = Math.max(
-        item.rolls - leftover,
-        0
-      );
-
-      const hasManual = Object.prototype.hasOwnProperty.call(
-        day.manualProduction,
-        item.product
-      );
-
-      const finalRolls = hasManual
-        ? day.manualProduction[item.product]
-        : automatic;
-
-      return {
-        ...item,
-        leftover,
-        automatic,
-        finalRolls,
-      };
-    });
   }, [
-    plannedProduction,
-    day.leftovers,
-    day.manualProduction,
+    day,
+    yesterdayPlan,
+    yesterdayLeftover,
+    recommendation,
   ]);
 
-  const plannedPieces = plannedProduction.reduce(
-    (sum, item) => sum + item.pieces,
-    0
-  );
+  /* =======================================================
+     SEARCH
+  ======================================================= */
 
-  const plannedRolls = plannedProduction.reduce(
-    (sum, item) => sum + item.rolls,
-    0
-  );
+  const filteredMenus = useMemo(() => {
+    const q = search
+      .trim()
+      .toLowerCase();
 
-  const recommendationRolls = recommendation.reduce(
-    (sum, item) => sum + item.finalRolls,
-    0
-  );
+    if (!q) return MENUS;
 
-  const recommendationPieces = recommendation.reduce(
-    (sum, item) =>
-      sum + item.finalRolls * PIECES_PER_ROLL,
-    0
-  );
+    return MENUS.filter((menu) => {
+      if (
+        menu.name
+          .toLowerCase()
+          .includes(q)
+      ) {
+        return true;
+      }
+
+      if (menu.id.includes(q)) {
+        return true;
+      }
+
+      return menu.items.some(
+        (item) =>
+          item.product
+            .toLowerCase()
+            .includes(q)
+      );
+    });
+  }, [search]);
+
+  const filteredProducts = useMemo(() => {
+    const q = search
+      .trim()
+      .toLowerCase();
+
+    if (!q) return PRODUCTS;
+
+    return PRODUCTS.filter((product) =>
+      product
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [search]);
+
+  /* =======================================================
+     CORE PRODUCTION CALCULATION
+
+     MENU QUANTITY × MENU PIECES
+                         ↓
+                  TOTAL PIECES
+                         ↓
+                       ÷ 8
+                         ↓
+                    CEIL = ROLLS
+
+     Individual Roll:
+                  1 roll = 8 pieces
+  ======================================================= */
+
+  const productionList =
+    useMemo<ProductionLine[]>(() => {
+      const totals: Record<
+        string,
+        number
+      > = {};
+
+      /* Menu pieces */
+
+      for (const selected of day.menus) {
+        const menu = getMenu(
+          selected.menuId
+        );
+
+        if (!menu) continue;
+
+        for (const item of menu.items) {
+          totals[item.product] =
+            (totals[item.product] || 0) +
+            item.pieces *
+              selected.quantity;
+        }
+      }
+
+      /* Individual rolls */
+
+      for (const [
+        product,
+        rolls,
+      ] of Object.entries(
+        day.directRolls
+      )) {
+        totals[product] =
+          (totals[product] || 0) +
+          rolls * PIECES_PER_ROLL;
+      }
+
+      return Object.entries(totals)
+        .filter(
+          ([, pieces]) =>
+            pieces > 0
+        )
+        .map(
+          ([
+            product,
+            pieces,
+          ]) => ({
+            product,
+            pieces,
+            rolls:
+              piecesToRolls(
+                pieces
+              ),
+          })
+        )
+        .sort((a, b) =>
+          a.product.localeCompare(
+            b.product
+          )
+        );
+    }, [day]);
+
+  /* =======================================================
+     TODAY TOTALS
+  ======================================================= */
+
+  const totalPieces =
+    productionList.reduce(
+      (sum, item) =>
+        sum + item.pieces,
+      0
+    );
+
+  const totalRolls =
+    productionList.reduce(
+      (sum, item) =>
+        sum + item.rolls,
+      0
+    );
+
+  /* =======================================================
+     MENU ACTIONS
+  ======================================================= */
+
+  // function addMenu(menuId: string) {
+  //   setDay((current) => {
+  //     const existing =
+  //       current.menus.find(
+  //         (item) =>
+  //           item.menuId === menuId
+  //       );
+
+  //     if (existing) {
+  //       return {
+  //         ...current,
+  //         menus:
+  //           current.menus.map(
+  //             (item) =>
+  //               item.menuId ===
+  //               menuId
+  //                 ? {
+  //                     ...item,
+  //                     quantity:
+  //                       item.quantity +
+  //                       1,
+  //                   }
+  //                 : item
+  //           ),
+  //       };
+  //     }
+
+  //     return {
+  //       ...current,
+  //       menus: [
+  //         ...current.menus,
+  //         {
+  //           menuId,
+  //           quantity: 1,
+  //         },
+  //       ],
+  //     };
+  //   });
+  // }
 
   function addMenu(menuId: string) {
-    setDay((current) => {
-      const existing = current.menus.find(
-        (item) => item.menuId === menuId
-      );
+  setDay((current) => {
+    const existing = current.menus.find(
+      (item) => item.menuId === menuId
+    );
 
+    if (existing) {
       return {
         ...current,
-        menus: existing
-          ? current.menus.map((item) =>
-              item.menuId === menuId
-                ? {
-                    ...item,
-                    quantity: item.quantity + 1,
-                  }
-                : item
-            )
-          : [
-              ...current.menus,
-              {
-                menuId,
-                quantity: 1,
-              },
-            ],
-        manualProduction: {},
-      };
-    });
-  }
-
-  function changeMenu(
-    menuId: string,
-    amount: number
-  ) {
-    setDay((current) => ({
-      ...current,
-      menus: current.menus
-        .map((item) =>
+        menus: current.menus.map((item) =>
           item.menuId === menuId
             ? {
                 ...item,
-                quantity: Math.max(
-                  0,
-                  item.quantity + amount
-                ),
+                quantity: item.quantity + 1,
               }
             : item
-        )
-        .filter((item) => item.quantity > 0),
-      manualProduction: {},
+        ),
+        finalList: {},
+      };
+    }
+
+    return {
+      ...current,
+      menus: [
+        ...current.menus,
+        {
+          menuId,
+          quantity: 1,
+        },
+      ],
+      finalList: {},
+    };
+  });
+}
+  // function changeMenu(
+  //   menuId: string,
+  //   amount: number
+  // ) {
+  //   setDay((current) => ({
+  //     ...current,
+  //     menus:
+  //       current.menus
+  //         .map((item) =>
+  //           item.menuId === menuId
+  //             ? {
+  //                 ...item,
+  //                 quantity:
+  //                   Math.max(
+  //                     0,
+  //                     item.quantity +
+  //                       amount
+  //                   ),
+  //               }
+  //             : item
+  //         )
+  //         .filter(
+  //           (item) =>
+  //             item.quantity > 0
+  //         ),
+  //   }));
+  // }
+function changeMenu(
+  menuId: string,
+  amount: number
+) {
+  setDay((current) => ({
+    ...current,
+    menus: current.menus
+      .map((item) =>
+        item.menuId === menuId
+          ? {
+              ...item,
+              quantity: Math.max(
+                0,
+                item.quantity + amount
+              ),
+            }
+          : item
+      )
+      .filter(
+        (item) => item.quantity > 0
+      ),
+    finalList: {},
+  }));
+}
+  // function setMenuQuantity(
+  //   menuId: string,
+  //   value: string
+  // ) {
+  //   const quantity = Math.max(
+  //     0,
+  //     Number(value) || 0
+  //   );
+
+  //   setDay((current) => ({
+  //     ...current,
+  //     menus:
+  //       current.menus
+  //         .map((item) =>
+  //           item.menuId === menuId
+  //             ? {
+  //                 ...item,
+  //                 quantity,
+  //               }
+  //             : item
+  //         )
+  //         .filter(
+  //           (item) =>
+  //             item.quantity > 0
+  //         ),
+  //   }));
+  // }
+function setMenuQuantity(
+  menuId: string,
+  value: string
+) {
+  const quantity = Math.max(
+    0,
+    Number(value) || 0
+  );
+
+  setDay((current) => ({
+    ...current,
+    menus: current.menus
+      .map((item) =>
+        item.menuId === menuId
+          ? {
+              ...item,
+              quantity,
+            }
+          : item
+      )
+      .filter(
+        (item) => item.quantity > 0
+      ),
+    finalList: {},
+  }));
+}
+  /* =======================================================
+     INDIVIDUAL ROLLS
+  ======================================================= */
+
+ function addDirectRoll(
+  product: string
+) {
+  setDay((current) => ({
+    ...current,
+    directRolls: {
+      ...current.directRolls,
+      [product]:
+        (current.directRolls[product] || 0) + 1,
+    },
+    finalList: {},
+  }));
+}
+
+  // function changeDirectRoll(
+  //   product: string,
+  //   amount: number
+  // ) {
+  //   setDay((current) => {
+  //     const next = Math.max(
+  //       0,
+  //       (current.directRolls[
+  //         product
+  //       ] || 0) + amount
+  //     );
+
+  //     const directRolls = {
+  //       ...current.directRolls,
+  //     };
+
+  //     if (next === 0) {
+  //       delete directRolls[
+  //         product
+  //       ];
+  //     } else {
+  //       directRolls[
+  //         product
+  //       ] = next;
+  //     }
+
+  //     return {
+  //       ...current,
+  //       directRolls,
+  //     };
+  //   });
+  // }
+function changeDirectRoll(
+  product: string,
+  amount: number
+) {
+  setDay((current) => {
+    const next = Math.max(
+      0,
+      (current.directRolls[product] || 0) +
+        amount
+    );
+
+    const directRolls = {
+      ...current.directRolls,
+    };
+
+    if (next === 0) {
+      delete directRolls[product];
+    } else {
+      directRolls[product] = next;
+    }
+
+    return {
+      ...current,
+      directRolls,
+      finalList: {},
+    };
+  });
+}
+  /* =======================================================
+     FINAL LIST
+  ======================================================= */
+
+  function setFinalRolls(
+    product: string,
+    value: string
+  ) {
+    const rolls = Math.max(
+      0,
+      Number(value) || 0
+    );
+
+    setDay((current) => ({
+      ...current,
+      finalList: {
+        ...current.finalList,
+        [product]: rolls,
+      },
     }));
   }
 
-  function setMenuQuantity(
-    menuId: string,
+  function saveTodayPlan() {
+    const finalList: Record<
+      string,
+      number
+    > = {};
+
+    for (const item of productionList) {
+      finalList[item.product] =
+        item.rolls;
+    }
+
+    setDay((current) => ({
+      ...current,
+      finalList,
+    }));
+
+    setYesterdayPlan(
+      finalList
+    );
+
+    alert(
+      "Today's production list has been saved."
+    );
+  }
+
+  /* =======================================================
+     YESTERDAY LEFTOVERS
+  ======================================================= */
+
+  function openLeftovers() {
+    let plan =
+      day.finalList;
+
+    /*
+      If today's final list has not
+      been explicitly saved yet,
+      use the automatically calculated
+      production list.
+    */
+
+    if (
+      Object.keys(plan).length ===
+      0
+    ) {
+      plan =
+        Object.fromEntries(
+          productionList.map(
+            (item) => [
+              item.product,
+              item.rolls,
+            ]
+          )
+        );
+    }
+
+    setYesterdayPlan(
+      plan
+    );
+
+    setTab(
+      "leftover"
+    );
+  }
+
+  function setLeftover(
+    product: string,
     value: string
   ) {
     const quantity = Math.max(
@@ -965,756 +1316,925 @@ export default function HomePage() {
       Number(value) || 0
     );
 
-    setDay((current) => ({
-      ...current,
-      menus: current.menus
-        .map((item) =>
-          item.menuId === menuId
-            ? {
-                ...item,
-                quantity,
-              }
-            : item
-        )
-        .filter((item) => item.quantity > 0),
-      manualProduction: {},
-    }));
-  }
-
-  function removeMenu(menuId: string) {
-    setDay((current) => ({
-      ...current,
-      menus: current.menus.filter(
-        (item) => item.menuId !== menuId
-      ),
-      manualProduction: {},
-    }));
-  }
-
-  function addDirectRoll(product: string) {
-    setDay((current) => ({
-      ...current,
-      directRolls: {
-        ...current.directRolls,
-        [product]:
-          (current.directRolls[product] || 0) + 1,
-      },
-      manualProduction: {},
-    }));
-  }
-
-  function changeDirectRoll(
-    product: string,
-    amount: number
-  ) {
-    setDay((current) => {
-      const next = Math.max(
-        0,
-        (current.directRolls[product] || 0) +
-          amount
-      );
-
-      const directRolls = {
-        ...current.directRolls,
-      };
-
-      if (next === 0) {
-        delete directRolls[product];
-      } else {
-        directRolls[product] = next;
-      }
-
-      return {
+    setYesterdayLeftover(
+      (current) => ({
         ...current,
-        directRolls,
-        manualProduction: {},
-      };
-    });
-  }
-
-  function addLeftover(product: string) {
-    setDay((current) => ({
-      ...current,
-      leftovers: {
-        ...current.leftovers,
         [product]:
-          current.leftovers[product] ?? 0,
-      },
-    }));
-
-    setLeftoverSearch("");
-  }
-
-  function changeLeftover(
-    product: string,
-    value: string
-  ) {
-    const number = Math.max(
-      0,
-      Number(value) || 0
+          quantity,
+      })
     );
-
-    setDay((current) => ({
-      ...current,
-      leftovers: {
-        ...current.leftovers,
-        [product]: number,
-      },
-    }));
   }
 
-  function removeLeftover(product: string) {
-    setDay((current) => {
-      const leftovers = {
-        ...current.leftovers,
-      };
+  /* =======================================================
+     RECOMMENDATION
 
-      delete leftovers[product];
+     Yesterday planned rolls
+                    -
+     Yesterday leftover rolls
+                    =
+     Recommended rolls
 
-      return {
-        ...current,
-        leftovers,
-      };
-    });
-  }
-
-  function setManualProduction(
-    product: string,
-    value: string
-  ) {
-    const number = Math.max(
-      0,
-      Number(value) || 0
-    );
-
-    setDay((current) => ({
-      ...current,
-      manualProduction: {
-        ...current.manualProduction,
-        [product]: number,
-      },
-    }));
-  }
-
-  function resetManualProduction() {
-    setDay((current) => ({
-      ...current,
-      manualProduction: {},
-    }));
-  }
+     User can then modify it.
+  ======================================================= */
 
   function generateRecommendation() {
-    setRecommendationGenerated(true);
-    resetManualProduction();
-  }
+    const result: Record<
+      string,
+      number
+    > = {};
 
-  if (!loaded) {
-    return (
-      <main className="min-h-screen bg-[#f4f7fb] p-10">
-        Loading...
-      </main>
+    for (const [
+      product,
+      planned,
+    ] of Object.entries(
+      yesterdayPlan
+    )) {
+      const leftover =
+        yesterdayLeftover[
+          product
+        ] || 0;
+
+      result[product] =
+        Math.max(
+          0,
+          planned - leftover
+        );
+    }
+
+    setRecommendation(
+      result
+    );
+
+    setTab(
+      "recommendation"
     );
   }
 
-  return (
-    <main className="min-h-screen bg-[#f4f7fb] text-[#17233b]">
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-[1600px] items-center gap-10 px-8">
-          <a
-            href="/"
-            className="py-6 text-2xl font-bold"
-          >
-            Sushi Production
-          </a>
+  function saveRecommendation() {
+    setDay((current) => ({
+      ...current,
+      finalList: {
+        ...recommendation,
+      },
+    }));
 
-          <nav className="flex gap-8">
-            <a
-              href="/"
-              className="border-b-2 border-[#17233b] py-6 font-semibold"
-            >
-              Production
-            </a>
-            <a
-              href="/analytics"
-              className="py-6 text-slate-600"
-            >
-              Analytics
-            </a>
-            <a
-              href="/inventory"
-              className="py-6 text-slate-600"
-            >
-              Inventory
-            </a>
-            <a
-              href="/recommendations"
-              className="py-6 text-slate-600"
-            >
-              Recommendations
-            </a>
-          </nav>
+    alert(
+      "Recommendation saved as today's final production list."
+    );
+  }
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
+  return (
+    <main className="min-h-screen bg-slate-100 text-slate-900">
+      {/* HEADER */}
+
+      <header className="bg-slate-900 text-white">
+        <div className="mx-auto max-w-7xl px-6 py-6">
+          <h1 className="text-3xl font-bold">
+            🍣 Sushi Production
+          </h1>
+
+          <p className="mt-1 text-slate-300">
+            Production planning
+          </p>
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1600px] px-8 py-10">
-        <div className="mb-10">
-          <h1 className="text-4xl font-bold">
-            Daily Production
-          </h1>
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* =================================================
+            TABS
+        ================================================= */}
 
-          <p className="mt-2 text-slate-500">
-            {day.date}
-          </p>
+        <div className="grid gap-3 md:grid-cols-3">
+          <button
+            onClick={() =>
+              setTab("plan")
+            }
+            className={`rounded-2xl p-5 text-left ${
+              tab === "plan"
+                ? "bg-slate-900 text-white"
+                : "bg-white"
+            }`}
+          >
+            <div className="font-bold">
+              ① Today's List
+            </div>
+
+            <div className="mt-1 text-sm opacity-70">
+              Menu + individual rolls
+            </div>
+          </button>
+
+          <button
+            onClick={
+              openLeftovers
+            }
+            className={`rounded-2xl p-5 text-left ${
+              tab === "leftover"
+                ? "bg-slate-900 text-white"
+                : "bg-white"
+            }`}
+          >
+            <div className="font-bold">
+              ② Yesterday's Leftovers
+            </div>
+
+            <div className="mt-1 text-sm opacity-70">
+              Enter unsold rolls
+            </div>
+          </button>
+
+          <button
+            onClick={
+              generateRecommendation
+            }
+            className={`rounded-2xl p-5 text-left ${
+              tab ===
+              "recommendation"
+                ? "bg-slate-900 text-white"
+                : "bg-white"
+            }`}
+          >
+            <div className="font-bold">
+              ③ Recommendation
+            </div>
+
+            <div className="mt-1 text-sm opacity-70">
+              Planned − leftovers
+            </div>
+          </button>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-2">
-          {/* ================= MENU ================= */}
+        {/* =================================================
+            TODAY'S LIST
+        ================================================= */}
 
-          <section className="rounded-3xl bg-white p-8 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">
-                  1. Today's Menus
-                </h2>
+        {tab === "plan" && (
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            {/* SEARCH */}
 
-                <p className="mt-1 text-slate-500">
-                  Search and add today's menus
-                </p>
-              </div>
-            </div>
+            <section className="rounded-3xl bg-white p-6 shadow-sm">
+              <h2 className="text-2xl font-bold">
+                Search Menu / Roll
+              </h2>
 
-            <div className="mt-6">
               <input
-                value={menuSearch}
-                onChange={(e) =>
-                  setMenuSearch(e.target.value)
+                value={search}
+                onChange={(event) =>
+                  setSearch(
+                    event.target.value
+                  )
                 }
-                placeholder="Search menu or code..."
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-[#17233b]"
+                placeholder="Search by Menu name, number or roll..."
+                className="mt-5 w-full rounded-xl border px-4 py-3 outline-none focus:border-slate-900"
               />
-            </div>
 
-            {menuSearch && (
-              <div className="mt-3 max-h-64 overflow-auto rounded-xl border">
-                {menuResults.map((menu) => (
-                  <button
-                    key={menu.id}
-                    onClick={() => addMenu(menu.id)}
-                    className="flex w-full items-center justify-between border-b px-4 py-3 text-left hover:bg-slate-50"
-                  >
-                    <span>
-                      <span className="font-semibold">
-                        {menu.name}
-                      </span>
-                      <span className="ml-3 text-sm text-slate-400">
-                        {menu.id}
-                      </span>
-                    </span>
+              {/* MENUS */}
 
-                    <span className="rounded-lg bg-[#17233b] px-3 py-1 text-sm font-semibold text-white">
-                      + Add
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="mt-6 space-y-3">
-              {selectedMenus.length === 0 && (
-                <div className="rounded-xl bg-slate-50 p-5 text-center text-slate-500">
-                  No menu selected
-                </div>
-              )}
-
-              {selectedMenus.map((item) => (
-                <div
-                  key={item.menuId}
-                  className="rounded-2xl border border-slate-200 p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold">
-                        {item.menu.name}
-                      </div>
-
-                      <div className="text-sm text-slate-400">
-                        {item.menu.id}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        removeMenu(item.menuId)
-                      }
-                      className="text-sm text-red-500"
-                    >
-                      Remove
-                    </button>
-                  </div>
-
-                  <div className="mt-4 flex items-center gap-3">
-                    <button
-                      onClick={() =>
-                        changeMenu(item.menuId, -1)
-                      }
-                      className="h-10 w-10 rounded-xl bg-slate-100 text-xl"
-                    >
-                      −
-                    </button>
-
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        setMenuQuantity(
-                          item.menuId,
-                          e.target.value
-                        )
-                      }
-                      className="w-20 rounded-xl border px-3 py-2 text-center"
-                    />
-
-                    <button
-                      onClick={() =>
-                        changeMenu(item.menuId, 1)
-                      }
-                      className="h-10 w-10 rounded-xl bg-slate-100 text-xl"
-                    >
-                      +
-                    </button>
-
-                    <span className="text-slate-500">
-                      menus
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* DIRECT ROLLS */}
-
-            <div className="mt-10 border-t pt-8">
-              <h3 className="text-xl font-bold">
-                Add individual rolls
+              <h3 className="mb-3 mt-7 font-bold text-slate-500">
+                MENUS
               </h3>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Search a roll that is not coming from a menu
-              </p>
-
-              <input
-                value={rollSearch}
-                onChange={(e) =>
-                  setRollSearch(e.target.value)
-                }
-                placeholder="Search individual roll..."
-                className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none"
-              />
-
-              {rollSearch && (
-                <div className="mt-2 max-h-52 overflow-auto rounded-xl border">
-                  {rollResults.map((product) => (
+              <div className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
+                {filteredMenus.map(
+                  (menu) => (
                     <button
-                      key={product}
-                      onClick={() =>
-                        addDirectRoll(product)
+                      key={
+                        menu.id
                       }
-                      className="flex w-full items-center justify-between border-b px-4 py-3 text-left hover:bg-slate-50"
+                      onClick={() =>
+                        addMenu(
+                          menu.id
+                        )
+                      }
+                      className="w-full rounded-xl border p-4 text-left transition hover:bg-slate-50"
                     >
-                      <span>{product}</span>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="font-semibold">
+                            {
+                              menu.name
+                            }
+                          </div>
 
-                      <span className="rounded-lg bg-[#17233b] px-3 py-1 text-sm text-white">
-                        + Add
+                          <div className="mt-1 text-xs text-slate-400">
+                            #{menu.id}
+                          </div>
+                        </div>
+
+                        <span className="rounded-lg bg-slate-900 px-3 py-1 text-white">
+                          +
+                        </span>
+                      </div>
+
+                      <div className="mt-3 text-sm leading-6 text-slate-500">
+                        {menu.items
+                          .map(
+                            (
+                              item
+                            ) =>
+                              `${item.product} × ${item.pieces} pcs`
+                          )
+                          .join(
+                            " · "
+                          )}
+                      </div>
+                    </button>
+                  )
+                )}
+
+                {filteredMenus.length ===
+                  0 && (
+                  <div className="rounded-xl bg-slate-50 p-6 text-center text-slate-500">
+                    No Menu found.
+                  </div>
+                )}
+              </div>
+
+              {/* INDIVIDUAL ROLLS */}
+
+              <h3 className="mb-3 mt-7 font-bold text-slate-500">
+                INDIVIDUAL ROLLS
+              </h3>
+
+              <div className="max-h-80 space-y-2 overflow-y-auto">
+                {filteredProducts.map(
+                  (product) => (
+                    <button
+                      key={
+                        product
+                      }
+                      onClick={() =>
+                        addDirectRoll(
+                          product
+                        )
+                      }
+                      className="flex w-full items-center justify-between rounded-xl border p-4 text-left transition hover:bg-slate-50"
+                    >
+                      <span>
+                        {
+                          product
+                        }
+                      </span>
+
+                      <span className="rounded-lg bg-slate-900 px-3 py-1 text-white">
+                        +
                       </span>
                     </button>
-                  ))}
+                  )
+                )}
+              </div>
+            </section>
 
-                  {rollResults.length === 0 && (
-                    <button
-                      onClick={() => {
-                        addDirectRoll(
-                          normaliseProductName(
-                            rollSearch
-                          )
-                        );
-                        setRollSearch("");
-                      }}
-                      className="w-full px-4 py-3 text-left"
-                    >
-                      + Add "{rollSearch}"
-                    </button>
-                  )}
+            {/* TODAY SELECTION */}
+
+            <section className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold">
+                    Today's Selection
+                  </h2>
+
+                  <p className="mt-1 text-slate-500">
+                    Menu quantities + individual rolls
+                  </p>
                 </div>
-              )}
 
-              {Object.entries(day.directRolls).length >
-                0 && (
-                <div className="mt-4 space-y-2">
-                  {Object.entries(
-                    day.directRolls
-                  ).map(([product, quantity]) => (
+                <button
+                  onClick={
+                    saveTodayPlan
+                  }
+                  className="rounded-xl bg-slate-900 px-5 py-3 font-bold text-white"
+                >
+                  Save
+                </button>
+              </div>
+
+              {/* SELECTED MENUS */}
+
+              <h3 className="mt-7 font-bold">
+                Selected Menus
+              </h3>
+
+              <div className="mt-3 space-y-2">
+                {day.menus.length ===
+                  0 && (
+                  <div className="rounded-xl bg-slate-50 p-5 text-center text-slate-500">
+                    No Menu selected.
+                  </div>
+                )}
+
+                {day.menus.map(
+                  (selected) => {
+                    const menu =
+                      getMenu(
+                        selected.menuId
+                      );
+
+                    if (!menu)
+                      return null;
+
+                    return (
+                      <div
+                        key={
+                          selected.menuId
+                        }
+                        className="rounded-xl bg-slate-50 p-4"
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <div className="font-semibold">
+                              {
+                                menu.name
+                              }
+                            </div>
+
+                            <div className="text-xs text-slate-400">
+                              #{menu.id}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() =>
+                                changeMenu(
+                                  menu.id,
+                                  -1
+                                )
+                              }
+                              className="h-9 w-9 rounded-lg border bg-white"
+                            >
+                              −
+                            </button>
+
+                            <input
+                              type="number"
+                              min="0"
+                              value={
+                                selected.quantity
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                setMenuQuantity(
+                                  menu.id,
+                                  event
+                                    .target
+                                    .value
+                                )
+                              }
+                              className="h-9 w-16 rounded-lg border text-center font-bold"
+                            />
+
+                            <button
+                              onClick={() =>
+                                changeMenu(
+                                  menu.id,
+                                  1
+                                )
+                              }
+                              className="h-9 w-9 rounded-lg bg-slate-900 text-white"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+
+              {/* INDIVIDUAL ROLLS */}
+
+              <h3 className="mt-7 font-bold">
+                Individual Rolls
+              </h3>
+
+              <div className="mt-3 space-y-2">
+                {Object.entries(
+                  day.directRolls
+                ).map(
+                  ([
+                    product,
+                    quantity,
+                  ]) => (
                     <div
-                      key={product}
-                      className="flex items-center justify-between rounded-xl bg-slate-50 p-3"
+                      key={
+                        product
+                      }
+                      className="flex items-center justify-between rounded-xl bg-slate-50 p-4"
                     >
-                      <span>{product}</span>
+                      <div>
+                        <div className="font-semibold">
+                          {
+                            product
+                          }
+                        </div>
+
+                        <div className="text-xs text-slate-400">
+                          {quantity *
+                            PIECES_PER_ROLL} pieces
+                        </div>
+                      </div>
 
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() =>
                             changeDirectRoll(
                               product,
-                              -0.125
+                              -1
                             )
                           }
-                          className="h-8 w-8 rounded-lg bg-white"
+                          className="h-9 w-9 rounded-lg border bg-white"
                         >
                           −
                         </button>
 
-                        <span className="w-20 text-center">
-                          {formatNumber(quantity)}
+                        <span className="w-12 text-center font-bold">
+                          {
+                            quantity
+                          }
                         </span>
 
                         <button
                           onClick={() =>
                             changeDirectRoll(
                               product,
-                              0.125
+                              1
                             )
                           }
-                          className="h-8 w-8 rounded-lg bg-white"
+                          className="h-9 w-9 rounded-lg bg-slate-900 text-white"
                         >
                           +
                         </button>
-
-                        <span className="text-sm text-slate-500">
-                          roll
-                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
+                  )
+                )}
 
-          {/* ================= PLANNED ================= */}
-
-          <section className="rounded-3xl bg-white p-8 shadow-sm">
-            <div>
-              <h2 className="text-2xl font-bold">
-                Today's Production List
-              </h2>
-
-              <p className="mt-1 text-slate-500">
-                Automatically calculated from menus
-              </p>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <div className="rounded-2xl bg-slate-50 p-5">
-                <div className="text-sm text-slate-500">
-                  Total pieces
-                </div>
-
-                <div className="mt-1 text-3xl font-bold">
-                  {formatNumber(plannedPieces)}
-                </div>
+                {Object.keys(
+                  day.directRolls
+                ).length ===
+                  0 && (
+                  <div className="rounded-xl bg-slate-50 p-5 text-center text-slate-500">
+                    No individual roll added.
+                  </div>
+                )}
               </div>
 
-              <div className="rounded-2xl bg-slate-50 p-5">
-                <div className="text-sm text-slate-500">
-                  Total rolls
-                </div>
+              {/* PRODUCTION LIST */}
 
-                <div className="mt-1 text-3xl font-bold">
-                  {formatNumber(plannedRolls)}
-                </div>
-              </div>
-            </div>
+              <div className="mt-8 border-t pt-6">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <h2 className="text-xl font-bold">
+                      Production List
+                    </h2>
 
-            <div className="mt-6 space-y-3">
-              {plannedProduction.length === 0 && (
-                <div className="rounded-xl bg-slate-50 p-8 text-center text-slate-500">
-                  Add menus or individual rolls
-                </div>
-              )}
+                    <p className="mt-1 text-sm text-slate-500">
+                      1 roll = 8 pieces
+                    </p>
+                  </div>
 
-              {plannedProduction.map((item) => (
-                <div
-                  key={item.product}
-                  className="rounded-2xl border border-slate-200 p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold">
-                        {item.product}
-                      </div>
-
-                      <div className="mt-1 text-sm text-slate-500">
-                        Required:{" "}
-                        {formatNumber(item.pieces)}{" "}
-                        pieces →{" "}
-                        <strong>
-                          {formatNumber(item.rolls)} rolls
-                        </strong>
-                      </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold">
+                      {
+                        totalRolls
+                      }{" "}
+                      rolls
                     </div>
 
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">
-                        {formatNumber(item.rolls)}
-                      </div>
-
-                      <div className="text-sm text-slate-400">
-                        rolls
-                      </div>
+                    <div className="text-sm text-slate-500">
+                      {
+                        totalPieces
+                      }{" "}
+                      pieces
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
-        </div>
 
-        {/* ================= LEFTOVERS ================= */}
+                <div className="mt-5 space-y-2">
+                  {productionList.length ===
+                    0 && (
+                    <div className="rounded-xl bg-slate-50 p-6 text-center text-slate-500">
+                      Add a Menu or individual Roll above.
+                    </div>
+                  )}
 
-        <section className="mt-8 rounded-3xl bg-white p-8 shadow-sm">
-          <div>
+                  {productionList.map(
+                    (item) => {
+                      // const finalRolls =
+                      //   day.finalList[
+                      //     item.product
+                      //   ] ??
+                      //   item.rolls;
+                      const hasManualValue =
+  Object.prototype.hasOwnProperty.call(
+    day.finalList,
+    item.product
+  );
+
+const finalRolls = hasManualValue
+  ? day.finalList[item.product]
+  : item.rolls;
+
+                      return (
+                        <div
+                          key={
+                            item.product
+                          }
+                          className="rounded-xl border p-4"
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <div className="font-semibold">
+                                {
+                                  item.product
+                                }
+                              </div>
+
+                              <div className="mt-1 text-sm text-slate-500">
+                                Required:{" "}
+                                {
+                                  item.pieces
+                                }{" "}
+                                pieces →{" "}
+                                {
+                                  item.rolls
+                                }{" "}
+                                rolls
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() =>
+                                  setFinalRolls(
+                                    item.product,
+                                    String(
+                                      Math.max(
+                                        0,
+                                        finalRolls -
+                                          1
+                                      )
+                                    )
+                                  )
+                                }
+                                className="h-10 w-10 rounded-lg border bg-white"
+                              >
+                                −
+                              </button>
+
+                              <input
+                                type="number"
+                                min="0"
+                                value={
+                                  finalRolls
+                                }
+                                onChange={(
+                                  event
+                                ) =>
+                                  setFinalRolls(
+                                    item.product,
+                                    event
+                                      .target
+                                      .value
+                                  )
+                                }
+                                className="h-10 w-20 rounded-lg border text-center font-bold"
+                              />
+
+                              <button
+                                onClick={() =>
+                                  setFinalRolls(
+                                    item.product,
+                                    String(
+                                      finalRolls +
+                                        1
+                                    )
+                                  )
+                                }
+                                className="h-10 w-10 rounded-lg bg-slate-900 text-white"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* =================================================
+            YESTERDAY LEFTOVERS
+        ================================================= */}
+
+        {tab ===
+          "leftover" && (
+          <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm">
             <h2 className="text-2xl font-bold">
-              2. Yesterday's Leftovers
+              Yesterday's Leftovers
             </h2>
 
             <p className="mt-1 text-slate-500">
-              Search and add only the rolls that actually
-              remained yesterday
+              Enter yesterday's unsold rolls.
             </p>
-          </div>
 
-          <div className="mt-6 max-w-2xl">
-            <input
-              value={leftoverSearch}
-              onChange={(e) =>
-                setLeftoverSearch(e.target.value)
-              }
-              placeholder="Search roll..."
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none"
-            />
-
-            {leftoverSearch && (
-              <div className="mt-2 max-h-56 overflow-auto rounded-xl border">
-                {leftoverResults.map((product) => (
-                  <button
-                    key={product}
-                    onClick={() =>
-                      addLeftover(product)
-                    }
-                    className="flex w-full items-center justify-between border-b px-4 py-3 text-left hover:bg-slate-50"
-                  >
-                    <span>{product}</span>
-
-                    <span className="rounded-lg bg-[#17233b] px-3 py-1 text-sm text-white">
-                      + Add
-                    </span>
-                  </button>
-                ))}
-
-                {leftoverResults.length === 0 && (
-                  <button
-                    onClick={() => {
-                      addLeftover(
-                        normaliseProductName(
-                          leftoverSearch
-                        )
-                      );
-                      setLeftoverSearch("");
-                    }}
-                    className="w-full px-4 py-3 text-left"
-                  >
-                    + Add "{leftoverSearch}"
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="mt-6 max-w-3xl space-y-3">
-            {Object.keys(day.leftovers).length === 0 && (
-              <div className="rounded-xl bg-slate-50 p-6 text-center text-slate-500">
-                No leftovers entered
-              </div>
-            )}
-
-            {Object.entries(day.leftovers).map(
-              ([product, quantity]) => (
-                <div
-                  key={product}
-                  className="flex flex-col gap-4 rounded-2xl border border-slate-200 p-5 md:flex-row md:items-center md:justify-between"
-                >
-                  <div className="font-semibold">
-                    {product}
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.125"
-                      value={quantity}
-                      onChange={(e) =>
-                        changeLeftover(
-                          product,
-                          e.target.value
-                        )
-                      }
-                      className="w-28 rounded-xl border px-3 py-2 text-center"
-                    />
-
-                    <span className="text-slate-500">
-                      rolls
-                    </span>
-
-                    <button
-                      onClick={() =>
-                        removeLeftover(product)
-                      }
-                      className="ml-2 text-sm text-red-500"
-                    >
-                      Remove
-                    </button>
-                  </div>
+            <div className="mt-7 space-y-3">
+              {Object.keys(
+                yesterdayPlan
+              ).length ===
+                0 && (
+                <div className="rounded-xl bg-slate-50 p-8 text-center text-slate-500">
+                  No saved production plan yet.
+                  <br />
+                  Go to Today's List and save the plan first.
                 </div>
-              )
+              )}
+
+              {Object.entries(
+                yesterdayPlan
+              ).map(
+                ([
+                  product,
+                  planned,
+                ]) => {
+                  const leftover =
+                    yesterdayLeftover[
+                      product
+                    ] || 0;
+
+                  return (
+                    <div
+                      key={
+                        product
+                      }
+                      className="grid gap-4 rounded-2xl bg-slate-50 p-5 md:grid-cols-4 md:items-center"
+                    >
+                      <div className="font-semibold">
+                        {
+                          product
+                        }
+                      </div>
+
+                      <div className="text-slate-500">
+                        Planned
+                        <strong className="ml-2 text-slate-900">
+                          {
+                            planned
+                          }{" "}
+                          rolls
+                        </strong>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold uppercase text-slate-400">
+                          Leftover
+                        </label>
+
+                        <input
+                          type="number"
+                          min="0"
+                          value={
+                            leftover
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            setLeftover(
+                              product,
+                              event
+                                .target
+                                .value
+                            )
+                          }
+                          className="w-full rounded-xl border px-4 py-3 text-center font-bold"
+                        />
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-xs uppercase text-slate-400">
+                          Recommended
+                        </div>
+
+                        <div className="text-2xl font-bold">
+                          {Math.max(
+                            0,
+                            planned -
+                              leftover
+                          )}{" "}
+                          rolls
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+              )}
+            </div>
+
+            {Object.keys(
+              yesterdayPlan
+            ).length >
+              0 && (
+              <button
+                onClick={
+                  generateRecommendation
+                }
+                className="mt-8 w-full rounded-2xl bg-green-600 py-4 font-bold text-white"
+              >
+                Generate Today's Recommendation
+              </button>
             )}
-          </div>
+          </section>
+        )}
 
-          <button
-            onClick={generateRecommendation}
-            className="mt-8 rounded-xl bg-[#17233b] px-6 py-3 font-semibold text-white"
-          >
-            Generate Today's Recommendation
-          </button>
-        </section>
+        {/* =================================================
+            RECOMMENDATION
+        ================================================= */}
 
-        {/* ================= RECOMMENDATION ================= */}
-
-        {recommendationGenerated && (
-          <section className="mt-8 rounded-3xl bg-white p-8 shadow-sm">
-            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        {tab ===
+          "recommendation" && (
+          <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold">
-                  3. Today's Recommended Production
+                  Today's Recommendation
                 </h2>
 
                 <p className="mt-1 text-slate-500">
-                  Planned − yesterday's leftovers
+                  Yesterday planned − yesterday leftovers
                 </p>
               </div>
 
               <button
-                onClick={resetManualProduction}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm"
+                onClick={
+                  saveRecommendation
+                }
+                className="rounded-xl bg-slate-900 px-5 py-3 font-bold text-white"
               >
-                Reset My Changes
+                Save Final List
               </button>
             </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl bg-slate-50 p-5">
-                <div className="text-sm text-slate-500">
-                  Planned
-                </div>
-
-                <div className="mt-1 text-2xl font-bold">
-                  {formatNumber(plannedRolls)} rolls
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-5">
-                <div className="text-sm text-slate-500">
-                  Recommended
-                </div>
-
-                <div className="mt-1 text-2xl font-bold">
-                  {formatNumber(
-                    recommendationRolls
-                  )}{" "}
-                  rolls
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-5">
-                <div className="text-sm text-slate-500">
-                  Recommended pieces
-                </div>
-
-                <div className="mt-1 text-2xl font-bold">
-                  {formatNumber(
-                    recommendationPieces
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-3">
-              {recommendation.length === 0 && (
+            <div className="mt-7 space-y-3">
+              {Object.entries(
+                recommendation
+              ).length ===
+                0 && (
                 <div className="rounded-xl bg-slate-50 p-8 text-center text-slate-500">
-                  No production to recommend
+                  No recommendation yet.
+                  <br />
+                  Enter yesterday's leftovers first.
                 </div>
               )}
 
-              {recommendation.map((item) => (
-                <div
-                  key={item.product}
-                  className="rounded-2xl border border-slate-200 p-5"
-                >
-                  <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="font-semibold">
-                        {item.product}
-                      </div>
+              {Object.entries(
+                recommendation
+              ).map(
+                ([
+                  product,
+                  quantity,
+                ]) => {
+                  const planned =
+                    yesterdayPlan[
+                      product
+                    ] || 0;
 
-                      <div className="mt-2 text-sm text-slate-500">
-                        Planned:{" "}
-                        {formatNumber(item.rolls)} rolls
-                        {"  "}−{"  "}
-                        Leftover:{" "}
-                        {formatNumber(item.leftover)} rolls
-                        {"  "}={"  "}
-                        Recommended:{" "}
-                        <strong>
-                          {formatNumber(item.automatic)}{" "}
-                          rolls
-                        </strong>
+                  const leftover =
+                    yesterdayLeftover[
+                      product
+                    ] || 0;
+
+                  return (
+                    <div
+                      key={
+                        product
+                      }
+                      className="rounded-2xl bg-slate-50 p-5"
+                    >
+                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <div className="font-semibold">
+                            {
+                              product
+                            }
+                          </div>
+
+                          <div className="mt-1 text-sm text-slate-500">
+                            {
+                              planned
+                            }{" "}
+                            planned −{" "}
+                            {
+                              leftover
+                            }{" "}
+                            leftover = recommended
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() =>
+                              setRecommendation(
+                                (
+                                  current
+                                ) => ({
+                                  ...current,
+                                  [product]:
+                                    Math.max(
+                                      0,
+                                      quantity -
+                                        1
+                                    ),
+                                })
+                              )
+                            }
+                            className="h-11 w-11 rounded-lg border bg-white text-xl"
+                          >
+                            −
+                          </button>
+
+                          <input
+                            type="number"
+                            min="0"
+                            value={
+                              quantity
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              setRecommendation(
+                                (
+                                  current
+                                ) => ({
+                                  ...current,
+                                  [product]:
+                                    Math.max(
+                                      0,
+                                      Number(
+                                        event
+                                          .target
+                                          .value
+                                      ) ||
+                                        0
+                                    ),
+                                })
+                              )
+                            }
+                            className="h-11 w-24 rounded-lg border text-center font-bold"
+                          />
+
+                          <button
+                            onClick={() =>
+                              setRecommendation(
+                                (
+                                  current
+                                ) => ({
+                                  ...current,
+                                  [product]:
+                                    quantity +
+                                    1,
+                                })
+                              )
+                            }
+                            className="h-11 w-11 rounded-lg bg-slate-900 text-xl text-white"
+                          >
+                            +
+                          </button>
+
+                          <span className="ml-2 font-semibold">
+                            rolls
+                          </span>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.125"
-                        value={item.finalRolls}
-                        onChange={(e) =>
-                          setManualProduction(
-                            item.product,
-                            e.target.value
-                          )
-                        }
-                        className="w-32 rounded-xl border px-4 py-3 text-center text-lg font-bold"
-                      />
-
-                      <span className="text-slate-500">
-                        rolls
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                }
+              )}
             </div>
+
+            {Object.keys(
+              recommendation
+            ).length >
+              0 && (
+              <button
+                onClick={
+                  saveRecommendation
+                }
+                className="mt-8 w-full rounded-2xl bg-slate-900 py-4 font-bold text-white"
+              >
+                Save Today's Final Production List
+              </button>
+            )}
           </section>
         )}
       </div>
