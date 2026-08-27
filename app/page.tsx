@@ -28,13 +28,15 @@ type DayData = {
   finalList: Record<string, number>;
 };
 
+type History = Record<string, Record<string, number>>;
+
 type ProductionLine = {
   product: string;
   pieces: number;
   rolls: number;
 };
 
-const STORAGE_KEY = "sushi-production-v5";
+const STORAGE_KEY = "sushi-production-v6";
 
 const PIECES_PER_ROLL = 8;
 
@@ -720,6 +722,19 @@ function emptyDay(): DayData {
   };
 }
 
+function dateKey(date = new Date()) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(
+    d.getMonth() + 1
+  ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function yesterdayKey() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return dateKey(d);
+}
+
 function getMenu(menuId: string) {
   return MENUS.find((menu) => menu.id === menuId);
 }
@@ -747,6 +762,10 @@ export default function Home() {
   >("plan");
 
   const [search, setSearch] = useState("");
+  const [leftoverSearch, setLeftoverSearch] = useState("");
+
+  const [history, setHistory] =
+    useState<History>({});
 
   const [yesterdayPlan, setYesterdayPlan] =
     useState<Record<string, number>>({});
@@ -765,7 +784,10 @@ export default function Home() {
     const saved =
       localStorage.getItem(STORAGE_KEY);
 
-    if (!saved) return;
+    if (!saved) {
+      setYesterdayPlan({});
+      return;
+    }
 
     try {
       const parsed = JSON.parse(saved);
@@ -774,11 +796,15 @@ export default function Home() {
         setDay(parsed.day);
       }
 
-      if (parsed?.yesterdayPlan) {
-        setYesterdayPlan(
-          parsed.yesterdayPlan
-        );
-      }
+      const savedHistory: History =
+        parsed?.history || {};
+
+      setHistory(savedHistory);
+
+      const previousPlan =
+        savedHistory[yesterdayKey()] || {};
+
+      setYesterdayPlan(previousPlan);
 
       if (parsed?.yesterdayLeftover) {
         setYesterdayLeftover(
@@ -807,14 +833,14 @@ export default function Home() {
       STORAGE_KEY,
       JSON.stringify({
         day,
-        yesterdayPlan,
+        history,
         yesterdayLeftover,
         recommendation,
       })
     );
   }, [
     day,
-    yesterdayPlan,
+    history,
     yesterdayLeftover,
     recommendation,
   ]);
@@ -866,6 +892,20 @@ export default function Home() {
     );
   }, [search]);
 
+  const filteredLeftoverProducts = useMemo(() => {
+    const q = leftoverSearch
+      .trim()
+      .toLowerCase();
+
+    if (!q) return PRODUCTS;
+
+    return PRODUCTS.filter((product) =>
+      product
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [leftoverSearch]);
+
   /* =======================================================
      CORE PRODUCTION CALCULATION
 
@@ -875,7 +915,7 @@ export default function Home() {
                          ↓
                        ÷ 8
                          ↓
-                    CEIL = ROLLS
+                  EXACT ROLLS
 
      Individual Roll:
                   1 roll = 8 pieces
@@ -1251,7 +1291,12 @@ function changeDirectRoll(
 
     for (const item of productionList) {
       finalList[item.product] =
-        item.rolls;
+        Object.prototype.hasOwnProperty.call(
+          day.finalList,
+          item.product
+        )
+          ? day.finalList[item.product]
+          : item.rolls;
     }
 
     setDay((current) => ({
@@ -1259,9 +1304,10 @@ function changeDirectRoll(
       finalList,
     }));
 
-    setYesterdayPlan(
-      finalList
-    );
+    setHistory((current) => ({
+      ...current,
+      [dateKey()]: finalList,
+    }));
 
     alert(
       "Today's production list has been saved."
@@ -1270,41 +1316,29 @@ function changeDirectRoll(
 
   /* =======================================================
      YESTERDAY LEFTOVERS
+
+     The user manually searches and adds only
+     the products that actually remained yesterday.
   ======================================================= */
 
   function openLeftovers() {
-    let plan =
-      day.finalList;
+    const plan =
+      history[yesterdayKey()] || {};
 
-    /*
-      If today's final list has not
-      been explicitly saved yet,
-      use the automatically calculated
-      production list.
-    */
+    setYesterdayPlan(plan);
+    setTab("leftover");
+  }
 
-    if (
-      Object.keys(plan).length ===
-      0
-    ) {
-      plan =
-        Object.fromEntries(
-          productionList.map(
-            (item) => [
-              item.product,
-              item.rolls,
-            ]
-          )
-        );
-    }
+  function addYesterdayLeftover(
+    product: string
+  ) {
+    setYesterdayLeftover((current) => ({
+      ...current,
+      [product]:
+        current[product] ?? 0,
+    }));
 
-    setYesterdayPlan(
-      plan
-    );
-
-    setTab(
-      "leftover"
-    );
+    setLeftoverSearch("");
   }
 
   function setLeftover(
@@ -1319,10 +1353,23 @@ function changeDirectRoll(
     setYesterdayLeftover(
       (current) => ({
         ...current,
-        [product]:
-          quantity,
+        [product]: quantity,
       })
     );
+  }
+
+  function removeLeftover(
+    product: string
+  ) {
+    setYesterdayLeftover((current) => {
+      const next = {
+        ...current,
+      };
+
+      delete next[product];
+
+      return next;
+    });
   }
 
   /* =======================================================
@@ -1332,9 +1379,7 @@ function changeDirectRoll(
                     -
      Yesterday leftover rolls
                     =
-     Recommended rolls
-
-     User can then modify it.
+     Today's recommended rolls
   ======================================================= */
 
   function generateRecommendation() {
@@ -1374,6 +1419,13 @@ function changeDirectRoll(
     setDay((current) => ({
       ...current,
       finalList: {
+        ...recommendation,
+      },
+    }));
+
+    setHistory((current) => ({
+      ...current,
+      [dateKey()]: {
         ...recommendation,
       },
     }));
@@ -1946,98 +1998,133 @@ const finalRolls = hasManualValue
             </h2>
 
             <p className="mt-1 text-slate-500">
-              Enter yesterday's unsold rolls.
+              Search and enter only what was left yesterday.
             </p>
 
-            <div className="mt-7 space-y-3">
+            <div className="mt-7 max-w-2xl">
+              <input
+                value={leftoverSearch}
+                onChange={(event) =>
+                  setLeftoverSearch(
+                    event.target.value
+                  )
+                }
+                placeholder="Search roll..."
+                className="w-full rounded-xl border px-4 py-3 outline-none focus:border-slate-900"
+              />
+
+              {leftoverSearch && (
+                <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border">
+                  {filteredLeftoverProducts.map(
+                    (product) => (
+                      <button
+                        key={product}
+                        onClick={() =>
+                          addYesterdayLeftover(
+                            product
+                          )
+                        }
+                        className="flex w-full items-center justify-between border-b px-4 py-3 text-left hover:bg-slate-50"
+                      >
+                        <span>
+                          {product}
+                        </span>
+
+                        <span className="rounded-lg bg-slate-900 px-3 py-1 text-sm text-white">
+                          +
+                        </span>
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 max-w-3xl space-y-3">
               {Object.keys(
-                yesterdayPlan
+                yesterdayLeftover
               ).length ===
                 0 && (
                 <div className="rounded-xl bg-slate-50 p-8 text-center text-slate-500">
-                  No saved production plan yet.
-                  <br />
-                  Go to Today's List and save the plan first.
+                  Search a roll above and add yesterday's leftover.
                 </div>
               )}
 
               {Object.entries(
-                yesterdayPlan
+                yesterdayLeftover
               ).map(
                 ([
                   product,
-                  planned,
-                ]) => {
-                  const leftover =
-                    yesterdayLeftover[
-                      product
-                    ] || 0;
-
-                  return (
-                    <div
-                      key={
-                        product
-                      }
-                      className="grid gap-4 rounded-2xl bg-slate-50 p-5 md:grid-cols-4 md:items-center"
-                    >
+                  leftover,
+                ]) => (
+                  <div
+                    key={product}
+                    className="flex flex-col gap-4 rounded-2xl bg-slate-50 p-5 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div>
                       <div className="font-semibold">
-                        {
-                          product
-                        }
+                        {product}
                       </div>
 
-                      <div className="text-slate-500">
-                        Planned
-                        <strong className="ml-2 text-slate-900">
-                          {
-                            planned
-                          }{" "}
-                          rolls
-                        </strong>
-                      </div>
-
-                      <div>
-                        <label className="mb-1 block text-xs font-semibold uppercase text-slate-400">
-                          Leftover
-                        </label>
-
-                        <input
-                          type="number"
-                          min="0"
-                          value={
-                            leftover
-                          }
-                          onChange={(
-                            event
-                          ) =>
-                            setLeftover(
-                              product,
-                              event
-                                .target
-                                .value
-                            )
-                          }
-                          className="w-full rounded-xl border px-4 py-3 text-center font-bold"
-                        />
-                      </div>
-
-                      <div className="text-right">
-                        <div className="text-xs uppercase text-slate-400">
-                          Recommended
-                        </div>
-
-                        <div className="text-2xl font-bold">
-                          {Math.max(
-                            0,
-                            planned -
-                              leftover
-                          )}{" "}
-                          rolls
-                        </div>
+                      <div className="mt-1 text-sm text-slate-500">
+                        Yesterday leftover
                       </div>
                     </div>
-                  );
-                }
+
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.125"
+                        value={leftover}
+                        onChange={(event) =>
+                          setLeftover(
+                            product,
+                            event.target.value
+                          )
+                        }
+                        className="w-28 rounded-xl border px-4 py-3 text-center font-bold"
+                      />
+
+                      <span className="text-slate-500">
+                        rolls
+                      </span>
+
+                      <button
+                        onClick={() =>
+                          removeLeftover(
+                            product
+                          )
+                        }
+                        className="text-sm text-red-500"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+
+            <div className="mt-8 rounded-2xl bg-slate-50 p-5">
+              <div className="text-sm text-slate-500">
+                Yesterday's saved plan
+              </div>
+
+              <div className="mt-1 text-xl font-bold">
+                {Object.keys(
+                  yesterdayPlan
+                ).length}{" "}
+                products
+              </div>
+
+              {Object.keys(
+                yesterdayPlan
+              ).length ===
+                0 && (
+                <div className="mt-2 text-sm text-amber-600">
+                  No production plan was saved for yesterday.
+                </div>
               )}
             </div>
 
